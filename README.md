@@ -6,7 +6,9 @@ This repository contains the official implementation of the paper:
 > **Virtual Multiplex Staining for Histological Images using a Marker-wise Conditioned Diffusion Model**  
 > Hyun-Jic Oh, Junsik Kim, Zhiyi Shi, Yichen Wu, Yu-An Chen, Peter K. Sorger, Hanspeter Pfister, Won-Ki Jeong 
 
-## [Overview](Figure/overview.png)
+## [Overview]
+
+![Overview Figure](Figure/overview.png)
 
 We propose a marker-wise conditioned latent diffusion framework that generates virtual multiplex (mIF/mIHC) marker channels directly from corresponding H&E images while sharing a single unified architecture across all markers.
 The model supports marker-by-marker synthesis, accommodates heterogeneous marker intensity distributions, and is fine-tuned for single-step inference to improve both visual fidelity and runtime efficiency.
