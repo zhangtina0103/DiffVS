@@ -5,7 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_DIR}"
 
 DATASET_ROOT="${DATASET_ROOT:-/path/to/HEMIT}"
-CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_diffusion_ft/checkpoint-epoch-100}"
+CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_inference}"
 PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
 
@@ -20,4 +20,3 @@ python src/diffvs/infer_diffusion_ft.py \
   --checkpoint_dir "${CHECKPOINT_DIR}" \
   --output_dir "${OUTPUT_DIR}" \
   "$@"
-

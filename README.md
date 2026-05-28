@@ -13,7 +13,7 @@ The code trains a marker-wise conditioned Diffusion-FT model for virtual stainin
 
 ![Overview Figure](Figure/overview.png)
 
-DiffVS fine-tunes a latent diffusion denoiser for paired virtual staining. The denoiser receives the noisy target-stain latent concatenated with the source-image latent, while a learnable marker token specifies the requested marker or stain. This allows a single diffusion model to synthesize multiple target channels while sharing the same image-to-image backbone.
+DiffVS follows a two-stage training recipe. Stage 1 performs Marigold-style paired latent diffusion training: the denoiser receives the noisy target-stain latent concatenated with the source-image latent, while a learnable marker token specifies the requested marker or stain. Stage 2 applies Diffusion-FT to the Stage-1 checkpoint for efficient one-step virtual staining.
 
 ## Repository Structure
 
@@ -24,14 +24,17 @@ DiffVS/
   configs/
     orion_markers.txt
   scripts/
-    train_orion_diffusion_ft.sh
-    train_hemit_diffusion_ft.sh
+    train_orion_stage1_marigold.sh
+    train_orion_stage2_diffusion_ft.sh
+    train_hemit_stage1_marigold.sh
+    train_hemit_stage2_diffusion_ft.sh
     infer_orion_diffusion_ft.sh
     infer_hemit_diffusion_ft.sh
   src/diffvs/
     datasets.py
     modeling.py
-    train_diffusion_ft.py
+    train_stage1_marigold.py
+    train_stage2_diffusion_ft.py
     infer_diffusion_ft.py
   requirements.txt
 ```
@@ -100,36 +103,70 @@ The HEMIT loader treats the dataset as a single target-domain virtual staining t
 
 ## Training
 
+The released code mirrors the two-stage procedure in the paper:
+
+1. **Stage 1: Marigold-style training.** Train a paired latent diffusion model conditioned on the source image latent and the marker token.
+2. **Stage 2: Diffusion-FT.** Initialize from the Stage-1 checkpoint and fine-tune at the one-step denoising timestep used for efficient inference.
+
 ### ORION-CRC
+
+Stage 1:
 
 ```bash
 DATASET_ROOT=/path/to/ORIONCRC_dataset_tile_20x \
 AUGMENTED_DIR=/path/to/ORIONCRC_tile_20x_he_norm \
-OUTPUT_DIR=./outputs/orion_diffusion_ft \
+OUTPUT_DIR=./outputs/orion_stage1_marigold \
 NUM_PROCESSES=1 \
 TRAIN_BATCH_SIZE=16 \
 NUM_EPOCHS=15 \
-bash scripts/train_orion_diffusion_ft.sh
+bash scripts/train_orion_stage1_marigold.sh
+```
+
+Stage 2:
+
+```bash
+DATASET_ROOT=/path/to/ORIONCRC_dataset_tile_20x \
+AUGMENTED_DIR=/path/to/ORIONCRC_tile_20x_he_norm \
+STAGE1_CHECKPOINT_DIR=./outputs/orion_stage1_marigold/stage1-checkpoint-epoch-15 \
+OUTPUT_DIR=./outputs/orion_stage2_diffusion_ft \
+NUM_PROCESSES=1 \
+TRAIN_BATCH_SIZE=16 \
+NUM_EPOCHS=5 \
+bash scripts/train_orion_stage2_diffusion_ft.sh
 ```
 
 To train a subset of markers:
 
 ```bash
 DATASET_ROOT=/path/to/ORIONCRC_dataset_tile_20x \
-OUTPUT_DIR=./outputs/orion_panck_sma \
-bash scripts/train_orion_diffusion_ft.sh \
+OUTPUT_DIR=./outputs/orion_stage1_panck_sma \
+bash scripts/train_orion_stage1_marigold.sh \
   --markers Hoechst Pan-CK SMA
 ```
 
 ### HEMIT
 
+Stage 1:
+
 ```bash
 DATASET_ROOT=/path/to/HEMIT \
-OUTPUT_DIR=./outputs/hemit_diffusion_ft \
+OUTPUT_DIR=./outputs/hemit_stage1_marigold \
 NUM_PROCESSES=1 \
 TRAIN_BATCH_SIZE=16 \
 NUM_EPOCHS=100 \
-bash scripts/train_hemit_diffusion_ft.sh
+bash scripts/train_hemit_stage1_marigold.sh
+```
+
+Stage 2:
+
+```bash
+DATASET_ROOT=/path/to/HEMIT \
+STAGE1_CHECKPOINT_DIR=./outputs/hemit_stage1_marigold/stage1-checkpoint-epoch-100 \
+OUTPUT_DIR=./outputs/hemit_stage2_diffusion_ft \
+NUM_PROCESSES=1 \
+TRAIN_BATCH_SIZE=16 \
+NUM_EPOCHS=5 \
+bash scripts/train_hemit_stage2_diffusion_ft.sh
 ```
 
 ## Inference
@@ -138,7 +175,7 @@ bash scripts/train_hemit_diffusion_ft.sh
 
 ```bash
 DATASET_ROOT=/path/to/ORIONCRC_dataset_tile_20x \
-CHECKPOINT_DIR=./outputs/orion_diffusion_ft/checkpoint-epoch-15 \
+CHECKPOINT_DIR=./outputs/orion_stage2_diffusion_ft/stage2-checkpoint-epoch-5 \
 OUTPUT_DIR=./outputs/orion_inference \
 bash scripts/infer_orion_diffusion_ft.sh
 ```
@@ -147,7 +184,7 @@ bash scripts/infer_orion_diffusion_ft.sh
 
 ```bash
 DATASET_ROOT=/path/to/HEMIT \
-CHECKPOINT_DIR=./outputs/hemit_diffusion_ft/checkpoint-epoch-100 \
+CHECKPOINT_DIR=./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5 \
 OUTPUT_DIR=./outputs/hemit_inference \
 bash scripts/infer_hemit_diffusion_ft.sh
 ```
@@ -159,7 +196,8 @@ Inference writes generated images, three-column panels, and an `inference_manife
 Training writes checkpoints to `OUTPUT_DIR`:
 
 ```text
-checkpoint-epoch-*/
+stage1-checkpoint-epoch-*/
+stage2-checkpoint-epoch-*/
 config.json
 logs/
 ```

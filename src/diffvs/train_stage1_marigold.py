@@ -22,7 +22,9 @@ except ImportError:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train marker-wise conditioned Diffusion-FT.")
+    parser = argparse.ArgumentParser(
+        description="Stage 1: Marigold-style marker-wise conditional latent diffusion training."
+    )
     parser.add_argument("--dataset", choices=["orion", "hemit"], required=True)
     parser.add_argument("--dataset_root", type=str, required=True)
     parser.add_argument("--split", type=str, default="train")
@@ -118,7 +120,8 @@ def main() -> None:
 
     config = vars(args).copy()
     config["markers"] = list(marker_names)
-    config["model_variant"] = "marker-wise-diffusion-ft"
+    config["stage"] = "stage1_marigold"
+    config["model_variant"] = "marker-wise-marigold-style-latent-diffusion"
     if accelerator.is_main_process:
         with open(Path(args.output_dir) / "config.json", "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
@@ -176,7 +179,7 @@ def main() -> None:
         accelerator.wait_for_everyone()
 
         if accelerator.is_main_process and ((epoch + 1) % args.save_every == 0):
-            ckpt_dir = Path(args.output_dir) / f"checkpoint-epoch-{epoch + 1}"
+            ckpt_dir = Path(args.output_dir) / f"stage1-checkpoint-epoch-{epoch + 1}"
             ckpt_dir.mkdir(parents=True, exist_ok=True)
             accelerator.unwrap_model(unet).save_pretrained(ckpt_dir / "unet")
             torch.save(
