@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${REPO_DIR}"
+
+DATASET_ROOT="${DATASET_ROOT:-/path/to/HEMIT}"
+CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_diffusion_ft/checkpoint-epoch-100}"
+OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_inference}"
+PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
+
+export PYTHONPATH="${REPO_DIR}/src:${PYTHONPATH:-}"
+
+python src/diffvs/infer_diffusion_ft.py \
+  --dataset hemit \
+  --dataset_root "${DATASET_ROOT}" \
+  --split test \
+  --markers HEMIT \
+  --pretrained_model "${PRETRAINED_MODEL}" \
+  --checkpoint_dir "${CHECKPOINT_DIR}" \
+  --output_dir "${OUTPUT_DIR}" \
+  "$@"
+
