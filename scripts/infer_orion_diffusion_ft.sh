@@ -18,4 +18,5 @@ python src/diffvs/infer_diffusion_ft.py \
   --pretrained_model "${PRETRAINED_MODEL}" \
   --checkpoint_dir "${CHECKPOINT_DIR}" \
   --output_dir "${OUTPUT_DIR}" \
+  --num_inference_steps 1 \
   "$@"

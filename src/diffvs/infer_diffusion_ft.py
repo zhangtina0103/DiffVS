@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--num_workers", type=int, default=2)
-    parser.add_argument("--num_inference_steps", type=int, default=50)
+    parser.add_argument("--num_inference_steps", type=int, default=1)
     parser.add_argument("--eta", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=7)
     return parser.parse_args()
@@ -70,7 +70,12 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    marker_names = args.markers or (DEFAULT_ORION_MARKERS if args.dataset == "orion" else ["HEMIT"])
+    marker_ckpt = torch.load(Path(args.checkpoint_dir) / "marker_encoder.pt", map_location="cpu")
+    ckpt_markers = list(marker_ckpt.get(
+        "markers",
+        DEFAULT_ORION_MARKERS if args.dataset == "orion" else ["HEMIT"],
+    ))
+    marker_names = args.markers or ckpt_markers
     dataset, marker_names = build_dataset(
         dataset=args.dataset,
         root_dir=args.dataset_root,
@@ -85,8 +90,6 @@ def main() -> None:
     unet = UNet2DConditionModel.from_pretrained(Path(args.checkpoint_dir) / "unet").to(device)
     scheduler = DDIMScheduler.from_pretrained(args.pretrained_model, subfolder="scheduler")
 
-    marker_ckpt = torch.load(Path(args.checkpoint_dir) / "marker_encoder.pt", map_location="cpu")
-    ckpt_markers = list(marker_ckpt.get("markers", marker_names))
     marker_encoder = MarkerTokenEncoder(
         marker_names=ckpt_markers,
         cross_attention_dim=int(marker_ckpt["cross_attention_dim"]),

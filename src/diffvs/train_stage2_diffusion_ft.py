@@ -63,7 +63,12 @@ def main() -> None:
     os.makedirs(args.output_dir, exist_ok=True)
     torch.manual_seed(args.seed)
 
-    marker_names = args.markers or (DEFAULT_ORION_MARKERS if args.dataset == "orion" else ["HEMIT"])
+    marker_ckpt_path = Path(args.stage1_checkpoint_dir) / "marker_encoder.pt"
+    marker_ckpt = torch.load(marker_ckpt_path, map_location="cpu")
+    marker_names = args.markers or list(marker_ckpt.get(
+        "markers",
+        DEFAULT_ORION_MARKERS if args.dataset == "orion" else ["HEMIT"],
+    ))
     dataset, marker_names = build_dataset(
         dataset=args.dataset,
         root_dir=args.dataset_root,
@@ -97,7 +102,6 @@ def main() -> None:
         marker_names=marker_names,
         cross_attention_dim=unet.config.cross_attention_dim,
     )
-    marker_ckpt = torch.load(Path(args.stage1_checkpoint_dir) / "marker_encoder.pt", map_location="cpu")
     marker_encoder.load_state_dict(marker_ckpt["state_dict"])
 
     if args.gradient_checkpointing:
