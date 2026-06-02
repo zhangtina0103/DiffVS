@@ -241,6 +241,8 @@ If you still see `upstream_ddim_1step`, pull the latest code. Quick check:
 
 ```bash
 bash scripts/verify_diffvs_checkpoint.sh
+# or SLURM:
+sbatch slurm/verify_diffvs_checkpoint.sbatch
 ```
 
 Also verify `pretrained_model` in `outputs/hemit_stage2_diffusion_ft/config.json` matches what you used for training (e.g. `Manojb/stable-diffusion-2-1-base`).
