@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_DIR}"
 
-DATASET_ROOT="${DATASET_ROOT:-/path/to/HEMIT}"
+DATASET_ROOT="${DATASET_ROOT:-${REPO_DIR}/data}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_stage1_marigold}"
 PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
 NUM_PROCESSES="${NUM_PROCESSES:-1}"

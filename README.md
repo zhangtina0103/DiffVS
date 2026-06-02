@@ -84,10 +84,10 @@ image_path,target_path
 
 ### HEMIT
 
-Expected layout:
+Expected layout (default: `DiffVS/data/` — set `DATASET_ROOT` if yours lives elsewhere):
 
 ```text
-/path/to/HEMIT/
+data/
   train/
     input/
     label/
@@ -149,7 +149,7 @@ bash scripts/train_orion_stage1_marigold.sh \
 Stage 1:
 
 ```bash
-DATASET_ROOT=/path/to/HEMIT \
+# DATASET_ROOT defaults to ./data (train/input, train/label, ...)
 OUTPUT_DIR=./outputs/hemit_stage1_marigold \
 NUM_PROCESSES=1 \
 TRAIN_BATCH_SIZE=16 \
@@ -160,7 +160,6 @@ bash scripts/train_hemit_stage1_marigold.sh
 Stage 2:
 
 ```bash
-DATASET_ROOT=/path/to/HEMIT \
 STAGE1_CHECKPOINT_DIR=./outputs/hemit_stage1_marigold/stage1-checkpoint-epoch-100 \
 OUTPUT_DIR=./outputs/hemit_stage2_diffusion_ft \
 NUM_PROCESSES=1 \
@@ -183,7 +182,6 @@ bash scripts/infer_orion_diffusion_ft.sh
 ### HEMIT
 
 ```bash
-DATASET_ROOT=/path/to/HEMIT \
 CHECKPOINT_DIR=./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5 \
 OUTPUT_DIR=./outputs/hemit_inference \
 bash scripts/infer_hemit_diffusion_ft.sh
