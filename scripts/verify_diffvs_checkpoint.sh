@@ -1,28 +1,18 @@
 #!/usr/bin/env bash
-# Quick sanity check before trusting inference panels.
+# Compare 3 inference modes on ONE test tile.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_DIR}"
 
-CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5}"
+STAGE2_CKPT="${STAGE2_CKPT:-./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5}"
+STAGE1_CKPT="${STAGE1_CKPT:-./outputs/hemit_stage1_marigold/stage1-checkpoint-epoch-100}"
 DATASET_ROOT="${DATASET_ROOT:-${REPO_DIR}/data}"
-export CHECKPOINT_DIR DATASET_ROOT REPO_DIR
+export STAGE2_CKPT STAGE1_CKPT DATASET_ROOT REPO_DIR
 
-echo "=== DiffVS checkpoint verify ==="
-echo "CHECKPOINT_DIR=${CHECKPOINT_DIR}"
-echo "DATASET_ROOT=${DATASET_ROOT}"
-
-[[ -d "${CHECKPOINT_DIR}/unet" ]] || { echo "MISSING unet/"; exit 1; }
-[[ -f "${CHECKPOINT_DIR}/marker_encoder.pt" ]] || { echo "MISSING marker_encoder.pt"; exit 1; }
-
-CFG="${CHECKPOINT_DIR}/../config.json"
-if [[ -f "${CFG}" ]]; then
-  echo "--- ${CFG} ---"
-  grep -E "pretrained_model|stage|single_step" "${CFG}" || true
-else
-  echo "WARN: no config.json at ${CFG}"
-fi
+echo "=== DiffVS one-tile comparison ==="
+echo "STAGE2_CKPT=${STAGE2_CKPT}"
+echo "STAGE1_CKPT=${STAGE1_CKPT}"
 
 if [[ -f "${REPO_DIR}/.venv/bin/activate" ]]; then
   # shellcheck source=/dev/null
@@ -30,33 +20,35 @@ if [[ -f "${REPO_DIR}/.venv/bin/activate" ]]; then
 fi
 export PYTHONPATH="${REPO_DIR}/src:${PYTHONPATH:-}"
 
-python - <<PY
-import json
-import os
-from pathlib import Path
+run_one() {
+  local label="$1" ckpt="$2" out="$3"
+  shift 3
+  echo ""
+  echo "========== ${label} =========="
+  rm -rf "${out}"
+  CHECKPOINT_DIR="${ckpt}" OUTPUT_DIR="${out}" bash scripts/infer_hemit_diffusion_ft.sh --max_rows 1 "$@"
+  grep infer_mode "${out}/inference_meta.json" || true
+  ls "${out}/panels/" 2>/dev/null || true
+}
 
-ckpt = Path(os.environ["CHECKPOINT_DIR"]).resolve()
-cfg_path = ckpt.parent / "config.json"
-if cfg_path.is_file():
-    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-    print("stage:", cfg.get("stage"))
-    print("pretrained_model:", cfg.get("pretrained_model"))
-    print("single_step_timestep:", cfg.get("single_step_timestep"))
-else:
-    print("config not found:", cfg_path)
-PY
+# A) Stage-2, correct scheduler, H&E latent init (what you ran)
+run_one "A: stage2 / source init" "${STAGE2_CKPT}" "${REPO_DIR}/outputs/verify_A_stage2_source"
 
-echo "--- one-tile inference (fixed sampler) ---"
-export OUTPUT_DIR="${REPO_DIR}/outputs/verify_one_tile"
-rm -rf "${OUTPUT_DIR}"
-bash scripts/infer_hemit_diffusion_ft.sh --max_rows 1
+# B) Stage-2, oracle init (matches training noise distribution — uses GT)
+run_one "B: stage2 / target init ORACLE" "${STAGE2_CKPT}" "${REPO_DIR}/outputs/verify_B_stage2_oracle" \
+  --stage2_init target
+
+# C) Stage-1, 25 DDIM steps (best shot at usable images)
+run_one "C: stage1 / 25 DDIM steps" "${STAGE1_CKPT}" "${REPO_DIR}/outputs/verify_C_stage1_25step" \
+  --num_inference_steps 25
 
 echo ""
-echo "Panel: ${OUTPUT_DIR}/panels/"
-ls -la "${OUTPUT_DIR}/panels/" 2>/dev/null || true
-if [[ -f "${OUTPUT_DIR}/inference_meta.json" ]]; then
-  echo "--- inference_meta.json ---"
-  grep -E "infer_mode|pretrained" "${OUTPUT_DIR}/inference_meta.json" || cat "${OUTPUT_DIR}/inference_meta.json"
-fi
+echo "Open panels (right column = prediction):"
+echo "  A ${REPO_DIR}/outputs/verify_A_stage2_source/panels/"
+echo "  B ${REPO_DIR}/outputs/verify_B_stage2_oracle/panels/"
+echo "  C ${REPO_DIR}/outputs/verify_C_stage1_25step/panels/"
 echo ""
-echo "Expect infer_mode: stage2_ddpm_t999 (not upstream_ddim_1step)"
+echo "How to read:"
+echo "  B good, A bad  → stage-2 weights OK, fix test-time init (hard)"
+echo "  B bad, A bad   → stage-2 training did not work"
+echo "  C good         → use stage-1 checkpoint for results, not stage-2"

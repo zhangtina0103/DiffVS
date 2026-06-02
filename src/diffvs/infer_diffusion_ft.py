@@ -45,12 +45,30 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Use original hvcl DDIM+randn (broken for stage-2 FT checkpoints).",
     )
+    parser.add_argument(
+        "--stage2_init",
+        choices=["source", "target"],
+        default="source",
+        help="x0 for add_noise at t=999. 'target' uses GT (debug only). Training uses target latents.",
+    )
     return parser.parse_args()
 
 
-def encode_latents(vae: AutoencoderKL, images: torch.Tensor) -> torch.Tensor:
+def encode_latents(
+    vae: AutoencoderKL,
+    images: torch.Tensor,
+    *,
+    generator: torch.Generator | None = None,
+    match_training: bool = False,
+) -> torch.Tensor:
+    """Training uses latent_dist.sample(); use match_training=True for stage-2 parity."""
     images = images * 2.0 - 1.0
-    return vae.encode(images).latent_dist.mode() * vae.config.scaling_factor
+    dist = vae.encode(images).latent_dist
+    if match_training:
+        latents = dist.sample(generator=generator)
+    else:
+        latents = dist.mode()
+    return latents * vae.config.scaling_factor
 
 
 def decode_latents(vae: AutoencoderKL, latents: torch.Tensor) -> torch.Tensor:
@@ -100,22 +118,22 @@ def infer_stage2_ddpm(
     unet: UNet2DConditionModel,
     vae: AutoencoderKL,
     scheduler: DDPMScheduler,
-    source_latents: torch.Tensor,
+    x0_latents: torch.Tensor,
+    source_cond: torch.Tensor,
     marker_context: torch.Tensor,
     timestep: int,
     generator: torch.Generator,
 ) -> torch.Tensor:
     """Matches train_stage2_diffusion_ft.py (DDPM @ t=999, noise on latents)."""
-    t = torch.tensor([timestep], device=source_latents.device, dtype=torch.long)
+    t = torch.tensor([timestep], device=x0_latents.device, dtype=torch.long)
     noise = torch.randn(
-        source_latents.shape,
-        device=source_latents.device,
-        dtype=source_latents.dtype,
+        x0_latents.shape,
+        device=x0_latents.device,
+        dtype=x0_latents.dtype,
         generator=generator,
     )
-    # Training uses add_noise(target_latents, ...); at test we use source_latents as x0 prior.
-    latents = scheduler.add_noise(source_latents, noise, t)
-    model_input = torch.cat([latents, source_latents], dim=1)
+    latents = scheduler.add_noise(x0_latents, noise, t)
+    model_input = torch.cat([latents, source_cond], dim=1)
     noise_pred = unet(model_input, t, encoder_hidden_states=marker_context, return_dict=False)[0]
     latents = scheduler.step(noise_pred, t, latents).prev_sample
     return decode_latents(vae, latents)
@@ -195,11 +213,14 @@ def main() -> None:
         print("Stage-1 checkpoint: using 25 DDIM steps (official 1-step DDIM is not enough).")
 
     if stage2 and not args.force_upstream_infer:
-        infer_mode = f"stage2_ddpm_t{ft_timestep}"
-        print(
-            "NOTE: hvcl release infer uses DDIM+randn, which does NOT match stage-2 training. "
-            f"Using DDPM one-step @ t={ft_timestep} instead."
-        )
+        infer_mode = f"stage2_ddpm_t{ft_timestep}_init_{args.stage2_init}"
+        if args.stage2_init == "target":
+            print("WARN: stage2_init=target uses ground-truth labels (debug/oracle only).")
+        else:
+            print(
+                "NOTE: stage-2 trains with add_noise(target_latent). At test we use source_latent "
+                f"as x0 prior. For debugging use --stage2_init target."
+            )
     else:
         infer_mode = f"upstream_ddim_{ddim_steps}step"
         if stage2:
@@ -217,13 +238,20 @@ def main() -> None:
             target = batch["target"].to(device)
             marker_name_batch = batch["marker_name"]
             marker_ids = torch.tensor([marker_to_id[str(name)] for name in marker_name_batch], device=device)
-            source_latents = encode_latents(vae, source)
+            vae_match = stage2 and not args.force_upstream_infer
+            source_latents = encode_latents(
+                vae, source, generator=generator, match_training=vae_match
+            )
+            target_latents = encode_latents(
+                vae, target, generator=generator, match_training=vae_match
+            )
             context = marker_encoder(marker_ids)
 
             if stage2 and not args.force_upstream_infer:
                 scheduler = DDPMScheduler.from_pretrained(pretrained_model, subfolder="scheduler")
+                x0 = target_latents if args.stage2_init == "target" else source_latents
                 pred = infer_stage2_ddpm(
-                    unet, vae, scheduler, source_latents, context, ft_timestep, generator
+                    unet, vae, scheduler, x0, source_latents, context, ft_timestep, generator
                 )
             else:
                 scheduler = DDIMScheduler.from_pretrained(pretrained_model, subfolder="scheduler")

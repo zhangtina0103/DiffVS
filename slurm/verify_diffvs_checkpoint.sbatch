@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-tile sanity check (paths + fixed stage-2 inference).
+# One-tile A/B/C comparison (stage2 source, stage2 oracle, stage1 25-step).
 #
 #   cd ~/DiffVS && sbatch slurm/verify_diffvs_checkpoint.sbatch
 #
