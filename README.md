@@ -223,6 +223,21 @@ Quick smoke test on 32 tiles: `bash scripts/infer_hemit_diffusion_ft.sh --max_ro
 
 Inference writes `predictions/`, `panels/` (H&E | GT | pred), and `inference_manifest.json`.
 
+### Metrics (identical to dual-branch `post_process.py`)
+
+After inference, export `*_real_B.tif` / `*_fake_B.tif` and run **your Pix2pix** `post_process.py` (same `score.csv` as dual-branch):
+
+```bash
+export PIX2PIX_ROOT=/home/zhangtin/Pix2pix_DualBranch
+bash scripts/eval_hemit_metrics.sh
+# → outputs/hemit_inference/score.csv
+#    outputs/hemit_inference/pix2pix_metrics/*.tif
+```
+
+Or SLURM: `sbatch slurm/eval_hemit_metrics.sbatch`
+
+For a fair comparison with dual-branch @ 1024², preds are upsampled to label size before export (DiffVS infers at 256²). Use `--no-resize-pred-to-gt` only for native 256² analysis.
+
 ## Checkpoints
 
 Training writes checkpoints to `OUTPUT_DIR`:
