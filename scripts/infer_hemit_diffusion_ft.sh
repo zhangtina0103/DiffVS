@@ -14,6 +14,11 @@ CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_stage2_diffusion_ft/stage2-che
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_inference}"
 PRETRAINED_MODEL="${PRETRAINED_MODEL:-Manojb/stable-diffusion-2-1-base}"
 
+if [[ ! -d "${CHECKPOINT_DIR}/unet" ]]; then
+  echo "ERROR: missing ${CHECKPOINT_DIR}/unet" >&2
+  exit 1
+fi
+
 export PYTHONPATH="${REPO_DIR}/src:${PYTHONPATH:-}"
 
 python src/diffvs/infer_diffusion_ft.py \
