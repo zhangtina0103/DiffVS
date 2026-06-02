@@ -227,6 +227,24 @@ sbatch slurm/infer_hemit_diffusion_ft.sbatch
 
 Optional: `bash scripts/infer_hemit_diffusion_ft.sh --max_rows 32` for a quick smoke test.
 
+**Troubleshooting garbage / rainbow panels**
+
+The released `hvcl/DiffVS` `infer_diffusion_ft.py` uses **DDIM + random noise**, but **stage-2** trains with **DDPM @ t=999** only. That mismatch produces noise-like images even when training succeeded.
+
+This fork’s `infer_diffusion_ft.py` auto-fixes stage-2 checkpoints (DDPM one-step). Confirm in the log:
+
+```text
+mode=stage2_ddpm_t999
+```
+
+If you still see `upstream_ddim_1step`, pull the latest code. Quick check:
+
+```bash
+bash scripts/verify_diffvs_checkpoint.sh
+```
+
+Also verify `pretrained_model` in `outputs/hemit_stage2_diffusion_ft/config.json` matches what you used for training (e.g. `Manojb/stable-diffusion-2-1-base`).
+
 **Metrics** (dual-branch `post_process.py`, comparable `score.csv`):
 
 ```bash
