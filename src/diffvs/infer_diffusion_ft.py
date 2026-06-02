@@ -26,7 +26,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split", type=str, default="test")
     parser.add_argument("--markers", nargs="+", default=None)
     parser.add_argument("--image_size", type=int, default=256)
-    parser.add_argument("--max_rows", type=int, default=32)
+    parser.add_argument(
+        "--max_rows",
+        type=int,
+        default=None,
+        help="Cap number of tiles (default: all). Use e.g. 32 for a quick smoke test.",
+    )
     parser.add_argument(
         "--pretrained_model",
         type=str,

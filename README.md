@@ -207,12 +207,21 @@ bash scripts/infer_orion_diffusion_ft.sh
 ### HEMIT
 
 ```bash
+cd /home/zhangtin/DiffVS
+sbatch slurm/infer_hemit_diffusion_ft.sbatch
+```
+
+Interactive (defaults: stage2 epoch-5 ckpt, full `data/test` split):
+
+```bash
 CHECKPOINT_DIR=./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5 \
 OUTPUT_DIR=./outputs/hemit_inference \
 bash scripts/infer_hemit_diffusion_ft.sh
 ```
 
-Inference writes generated images, three-column panels, and an `inference_manifest.json`.
+Quick smoke test on 32 tiles: `bash scripts/infer_hemit_diffusion_ft.sh --max_rows 32`
+
+Inference writes `predictions/`, `panels/` (H&E | GT | pred), and `inference_manifest.json`.
 
 ## Checkpoints
 
