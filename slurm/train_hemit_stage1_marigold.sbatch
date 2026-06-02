@@ -4,8 +4,10 @@
 #   cd /home/zhangtin/DiffVS
 #   sbatch slurm/train_hemit_stage1_marigold.sbatch
 #
+# Cluster max walltime is 6h — 100 epochs may need several jobs (no resume in stage1 yet).
+#   sbatch --export=ALL,NUM_EPOCHS=15 slurm/train_hemit_stage1_marigold.sbatch
 # Overrides (optional):
-#   sbatch --export=ALL,TRAIN_BATCH_SIZE=8,NUM_EPOCHS=100 slurm/train_hemit_stage1_marigold.sbatch
+#   sbatch --export=ALL,TRAIN_BATCH_SIZE=8 slurm/train_hemit_stage1_marigold.sbatch
 #   sbatch --export=ALL,PRETRAINED_MODEL=/home/zhangtin/DiffVS/pretrained/sd21-base slurm/train_hemit_stage1_marigold.sbatch
 #SBATCH --job-name=diffvs_s1
 #SBATCH --output=logs/diffvs_hemit_stage1_%j.out
@@ -14,7 +16,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=48:00:00
+#SBATCH --time=06:00:00
 
 set -euo pipefail
 source "${SLURM_SUBMIT_DIR:-$PWD}/slurm/_common.sh"
