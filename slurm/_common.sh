@@ -1,15 +1,8 @@
-# Shared setup for DiffVS SLURM jobs. Submit from repo root:
-#   sbatch slurm/train_hemit_stage1_marigold.sbatch
+# Shared SLURM setup. Submit from DiffVS repo root:
+#   cd /path/to/DiffVS && sbatch slurm/<job>.sbatch
 
 _submit="${SLURM_SUBMIT_DIR:-$PWD}"
-if [[ -f "${_submit}/slurm/_common.sh" ]]; then
-  REPO_ROOT="${_submit}"
-elif [[ -f "${_submit}/../slurm/_common.sh" ]]; then
-  REPO_ROOT="$(cd "${_submit}/.." && pwd)"
-else
-  echo "ERROR: submit sbatch from DiffVS repo root (need slurm/_common.sh)" >&2
-  exit 1
-fi
+REPO_ROOT="${_submit}"
 
 cd "${REPO_ROOT}"
 export PYTHONUNBUFFERED=1
@@ -24,7 +17,7 @@ activate_diffvs_env() {
     # shellcheck source=/dev/null
     source "${REPO_ROOT}/.venv/bin/activate"
   else
-    echo "ERROR: no .venv and CONDA_ENV unset under ${REPO_ROOT}" >&2
+    echo "ERROR: set CONDA_ENV or create ${REPO_ROOT}/.venv" >&2
     exit 1
   fi
 }

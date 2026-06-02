@@ -162,19 +162,11 @@ bash scripts/train_orion_stage1_marigold.sh \
 
 ### HEMIT
 
-**SLURM (MIT cluster):**
+Put data under `DiffVS/data/{train,val,test}/{input,label}/` (or set `DATASET_ROOT`).
+
+**Stage 1** — interactive:
 
 ```bash
-cd /home/zhangtin/DiffVS
-sbatch slurm/train_hemit_stage1_marigold.sbatch
-# after stage 1:
-sbatch slurm/train_hemit_stage2_diffusion_ft.sbatch
-```
-
-Stage 1 (interactive):
-
-```bash
-# DATASET_ROOT defaults to ./data (train/input, train/label, ...)
 OUTPUT_DIR=./outputs/hemit_stage1_marigold \
 NUM_PROCESSES=1 \
 TRAIN_BATCH_SIZE=16 \
@@ -182,7 +174,14 @@ NUM_EPOCHS=100 \
 bash scripts/train_hemit_stage1_marigold.sh
 ```
 
-Stage 2:
+**Stage 1** — SLURM (same env vars as above):
+
+```bash
+cd /path/to/DiffVS
+sbatch slurm/train_hemit_stage1_marigold.sbatch
+```
+
+**Stage 2** — interactive:
 
 ```bash
 STAGE1_CHECKPOINT_DIR=./outputs/hemit_stage1_marigold/stage1-checkpoint-epoch-100 \
@@ -191,6 +190,12 @@ NUM_PROCESSES=1 \
 TRAIN_BATCH_SIZE=16 \
 NUM_EPOCHS=5 \
 bash scripts/train_hemit_stage2_diffusion_ft.sh
+```
+
+**Stage 2** — SLURM:
+
+```bash
+sbatch slurm/train_hemit_stage2_diffusion_ft.sbatch
 ```
 
 ## Inference
@@ -206,12 +211,7 @@ bash scripts/infer_orion_diffusion_ft.sh
 
 ### HEMIT
 
-```bash
-cd /home/zhangtin/DiffVS
-sbatch slurm/infer_hemit_diffusion_ft.sbatch
-```
-
-Interactive (defaults: stage2 epoch-5 ckpt, full `data/test` split):
+**Inference** — interactive:
 
 ```bash
 CHECKPOINT_DIR=./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5 \
@@ -219,24 +219,27 @@ OUTPUT_DIR=./outputs/hemit_inference \
 bash scripts/infer_hemit_diffusion_ft.sh
 ```
 
-Quick smoke test on 32 tiles: `bash scripts/infer_hemit_diffusion_ft.sh --max_rows 32`
-
-Inference writes `predictions/`, `panels/` (H&E | GT | pred), and `inference_manifest.json`.
-
-### Metrics (identical to dual-branch `post_process.py`)
-
-After inference, export `*_real_B.tif` / `*_fake_B.tif` and run **your Pix2pix** `post_process.py` (same `score.csv` as dual-branch):
+**Inference** — SLURM:
 
 ```bash
-export PIX2PIX_ROOT=/home/zhangtin/Pix2pix_DualBranch
-bash scripts/eval_hemit_metrics.sh
-# → outputs/hemit_inference/score.csv
-#    outputs/hemit_inference/pix2pix_metrics/*.tif
+sbatch slurm/infer_hemit_diffusion_ft.sbatch
 ```
 
-Or SLURM: `sbatch slurm/eval_hemit_metrics.sbatch`
+Optional: `bash scripts/infer_hemit_diffusion_ft.sh --max_rows 32` for a quick smoke test.
 
-For a fair comparison with dual-branch @ 1024², preds are upsampled to label size before export (DiffVS infers at 256²). Use `--no-resize-pred-to-gt` only for native 256² analysis.
+**Metrics** (dual-branch `post_process.py`, comparable `score.csv`):
+
+```bash
+export PIX2PIX_ROOT=/path/to/Pix2pix_DualBranch
+bash scripts/eval_hemit_metrics.sh
+```
+
+**Metrics** — SLURM:
+
+```bash
+export PIX2PIX_ROOT=/path/to/Pix2pix_DualBranch
+sbatch slurm/eval_hemit_metrics.sbatch
+```
 
 ## Checkpoints
 
