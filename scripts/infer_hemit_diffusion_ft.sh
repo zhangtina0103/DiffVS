@@ -12,7 +12,7 @@ fi
 echo "DATASET_ROOT=${DATASET_ROOT}"
 CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_inference}"
-PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
+PRETRAINED_MODEL="${PRETRAINED_MODEL:-Manojb/stable-diffusion-2-1-base}"
 
 export PYTHONPATH="${REPO_DIR}/src:${PYTHONPATH:-}"
 

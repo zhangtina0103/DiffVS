@@ -27,7 +27,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--markers", nargs="+", default=None)
     parser.add_argument("--image_size", type=int, default=256)
     parser.add_argument("--max_rows", type=int, default=32)
-    parser.add_argument("--pretrained_model", type=str, default="stabilityai/stable-diffusion-2-1-base")
+    parser.add_argument(
+        "--pretrained_model",
+        type=str,
+        default="Manojb/stable-diffusion-2-1-base",
+        help="HF repo id or local dir with vae/, unet/, scheduler/",
+    )
     parser.add_argument("--checkpoint_dir", type=str, required=True)
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=1)

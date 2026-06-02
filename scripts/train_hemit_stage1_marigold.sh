@@ -13,7 +13,8 @@ if [[ ! -d "${DATASET_ROOT}/train/input" ]]; then
 fi
 echo "DATASET_ROOT=${DATASET_ROOT}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_stage1_marigold}"
-PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
+# stabilityai/stable-diffusion-2-1-base was removed from HF (late 2025); use mirror or local dir
+PRETRAINED_MODEL="${PRETRAINED_MODEL:-Manojb/stable-diffusion-2-1-base}"
 NUM_PROCESSES="${NUM_PROCESSES:-1}"
 TRAIN_BATCH_SIZE="${TRAIN_BATCH_SIZE:-16}"
 NUM_EPOCHS="${NUM_EPOCHS:-100}"

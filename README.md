@@ -51,7 +51,23 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-The training scripts use Hugging Face models. Make sure you have access to the corresponding model repositories and are logged in if required:
+The training scripts use Hugging Face models (SD 2.1 base: VAE + UNet + scheduler).
+
+**Note:** `stabilityai/stable-diffusion-2-1-base` was removed from Hugging Face in late 2025. Scripts default to the community mirror `Manojb/stable-diffusion-2-1-base`. Override with:
+
+```bash
+PRETRAINED_MODEL=Manojb/stable-diffusion-2-1-base   # or a local folder (see below)
+```
+
+Download once on a machine with internet, then copy to the cluster:
+
+```bash
+huggingface-cli download Manojb/stable-diffusion-2-1-base --local-dir ./pretrained/sd21-base
+# on cluster:
+PRETRAINED_MODEL=/path/to/pretrained/sd21-base bash scripts/train_hemit_stage1_marigold.sh
+```
+
+If a mirror is gated, log in:
 
 ```bash
 huggingface-cli login
@@ -146,7 +162,16 @@ bash scripts/train_orion_stage1_marigold.sh \
 
 ### HEMIT
 
-Stage 1:
+**SLURM (MIT cluster):**
+
+```bash
+cd /home/zhangtin/DiffVS
+sbatch slurm/train_hemit_stage1_marigold.sbatch
+# after stage 1:
+sbatch slurm/train_hemit_stage2_diffusion_ft.sbatch
+```
+
+Stage 1 (interactive):
 
 ```bash
 # DATASET_ROOT defaults to ./data (train/input, train/label, ...)

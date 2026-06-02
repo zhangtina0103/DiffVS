@@ -3,6 +3,7 @@ __pycache__/
 .DS_Store
 downloads/
 data/
+logs/
 outputs/
 wandb/
 *.pth
