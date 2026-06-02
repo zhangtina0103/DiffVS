@@ -5,6 +5,13 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_DIR}"
 
 DATASET_ROOT="${DATASET_ROOT:-${REPO_DIR}/data}"
+if [[ ! -d "${DATASET_ROOT}/train/input" ]]; then
+  echo "ERROR: HEMIT data not found at ${DATASET_ROOT}/train/input" >&2
+  echo "  Put data under DiffVS/data/{train,val,test}/{input,label}/ or set:" >&2
+  echo "  DATASET_ROOT=/path/to/HEMIT bash scripts/train_hemit_stage1_marigold.sh" >&2
+  exit 1
+fi
+echo "DATASET_ROOT=${DATASET_ROOT}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_stage1_marigold}"
 PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
 NUM_PROCESSES="${NUM_PROCESSES:-1}"

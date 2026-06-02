@@ -5,6 +5,11 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_DIR}"
 
 DATASET_ROOT="${DATASET_ROOT:-${REPO_DIR}/data}"
+if [[ ! -d "${DATASET_ROOT}/test/input" ]]; then
+  echo "ERROR: HEMIT test data not found at ${DATASET_ROOT}/test/input" >&2
+  exit 1
+fi
+echo "DATASET_ROOT=${DATASET_ROOT}"
 CHECKPOINT_DIR="${CHECKPOINT_DIR:-./outputs/hemit_stage2_diffusion_ft/stage2-checkpoint-epoch-5}"
 OUTPUT_DIR="${OUTPUT_DIR:-./outputs/hemit_inference}"
 PRETRAINED_MODEL="${PRETRAINED_MODEL:-stabilityai/stable-diffusion-2-1-base}"
